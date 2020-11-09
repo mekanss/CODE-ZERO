@@ -1,0 +1,192 @@
+using System.Collections;
+using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.Security.Cryptography;
+using UnityEngine;
+
+public class Movimento : MonoBehaviour
+{
+    // Variaveis
+    public float speed = 5f;
+    public float pulo = 5f;
+    private float movement = 0f;
+    private Rigidbody2D rigidBody;
+    public LayerMask Groundlayer;
+    public bool Tocandochao;
+    public bool TocandoparedeD;
+    public bool TocandoparedeE;
+    static public bool isFalling;
+    private Animator animacaoplayer;
+    public static Vector2 ropeHook;
+    static public Vector2 playerPosition;
+    public static bool Dash;
+    public float distanciadash;
+    public bool prontodash;
+    public SpriteRenderer Cargadodash;
+    public float velocidadeslide;
+    private SpriteRenderer spritedozero;
+    public Vector3 target;
+    private Collider2D Coliderzero;
+
+
+    void Start()
+    {
+        // ''Apontando'' Pros componentes do Unity
+        rigidBody = GetComponent<Rigidbody2D>();
+        animacaoplayer = GetComponent<Animator>();
+        Cargadodash = Cargadodash.GetComponent<SpriteRenderer>();
+        spritedozero = GetComponent<SpriteRenderer>();
+        Coliderzero = GetComponent<BoxCollider2D>();
+    }
+
+    void Update()
+    {
+        movement = Input.GetAxis("Horizontal");
+        
+        // Colisoes
+        /*
+        TocandoparedeE = Physics2D.Raycast(paredeecheckpoint.position, Vector2.down, Coliderzero.bounds.extents.y, groundlayer);
+        TocandoparedeD = Physics2D.Raycast(parededcheckpoint.position, Vector2.down, Coliderzero.bounds.extents.y, groundlayer);*/
+        Tocandochao = Physics2D.BoxCast(Coliderzero.bounds.center, Coliderzero.bounds.size, 0f, Vector2.down, 0.5f, Groundlayer);
+        
+        // Funções do movimento
+        Movimentofuncao();
+        Movimentovertical();
+
+
+
+
+
+        // Enviando info pro animator
+        animacaoplayer.SetFloat("Speed", Mathf.Abs(rigidBody.velocity.x));
+        animacaoplayer.SetBool("OnGround", Tocandochao);
+        animacaoplayer.SetBool("EstaDashando", Dash);
+        if (Input.GetMouseButtonUp(0))
+        {
+            animacaoplayer.SetTrigger("Clique");
+        }
+        playerPosition = transform.position;
+
+        if (Tocandochao == true)
+        {
+            prontodash = true;
+            Cargadodash.enabled = true;
+        }
+
+
+
+        // Dash aereo
+        if (Input.GetKeyDown("space") && Dash == false && prontodash == true)
+        {
+            Vector3 direction = Camera.main.ScreenToWorldPoint(Input.mousePosition) - transform.position;
+            direction.z = 0;
+            direction = direction.normalized;
+            StartCoroutine(Dashando(direction, rigidBody));
+        }
+
+        // Aumentar o Drag aereo do dash
+        if (Dash == true)
+        {
+            AumentarDrag();
+        }
+
+        else
+        {
+            CessarDrag();
+        }
+
+        // Slide da parede
+        if ((TocandoparedeD || TocandoparedeE) && !Tocandochao)
+        {
+            SlideParede();
+        }
+
+    }
+
+
+    // FIM DO UPDATE
+
+    // Codigo do dash
+    IEnumerator Dashando(Vector3 target, Rigidbody2D rigidBody)
+    {
+        Dash = true;
+        rigidBody.gravityScale = 0.0f;
+        rigidBody.velocity = (target * distanciadash);
+        yield return new WaitForSeconds(0.25f);
+        rigidBody.gravityScale = 1.0f;
+        prontodash = false;
+        Cargadodash.enabled = false;
+        yield return new WaitForSeconds(0.4f);
+        Dash = false;
+    }
+
+    // Aumentando Drag no dash
+    private void AumentarDrag ()
+    {
+        rigidBody.drag = rigidBody.drag+0.2f;
+    }
+
+    //Cessando o drag no dash
+    private void CessarDrag ()
+    {
+        rigidBody.drag = 0;
+    }
+
+    // Descendo a parede lentamente
+    private void SlideParede()
+    {
+        if (Dash || Tocandochao || !isFalling)
+        {
+            return;
+        }
+        rigidBody.velocity = new Vector2(rigidBody.velocity.x, -velocidadeslide);
+    }
+     
+     
+    // Função do Movimento
+    private void Movimentofuncao()
+    {
+        if (movement > 0  && Dash == false && !TocandoparedeD)
+        {
+            rigidBody.velocity = new Vector2(movement * speed, rigidBody.velocity.y);
+            // Flipando o boneco
+            spritedozero.flipX = false;
+
+        }
+        else if (movement < 0 &&  Dash == false && !TocandoparedeE)
+        {
+            rigidBody.velocity = new Vector2(movement * speed, rigidBody.velocity.y);
+            // Flipando o boneco
+            spritedozero.flipX = true;
+        }
+        else
+        {
+            if (Dash)
+            {
+                return;
+            }
+            rigidBody.velocity = new Vector2(0, rigidBody.velocity.y);
+        }
+    }
+    
+    // Função movimento vertical
+    private void Movimentovertical()
+    {
+        // Movimento vertical
+        if (Input.GetKeyDown(KeyCode.W) && (Tocandochao == true))
+        {
+            rigidBody.velocity = new Vector2(rigidBody.velocity.x, pulo);
+        }
+        // Detectar pulo
+        if (rigidBody.velocity.y < -0.1)
+        {
+            isFalling = true;
+        }
+        else
+        {
+            isFalling = false;
+        }
+    }
+
+
+}
