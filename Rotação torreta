@@ -1,0 +1,67 @@
+// Raphael Azambuja Silva Macedo 2020
+
+using System.Collections;
+using System.Collections.Generic;
+using UnityEditor.Experimental.GraphView;
+using UnityEngine;
+
+public class Torreta : MonoBehaviour
+{
+    public Transform alvo;
+    // alvo é o que a torreta vai mirar
+    public float velocidade = 1f;
+    // velocidade com que ela gira
+    private Vector3 Pontadocano;
+    // ponta do cano = local onde sairá o projetil
+    private float angulo;
+    // Angulo que ele rotará pra soltar o projetil
+    public GameObject HolderBala;
+    // GameObject da bala
+    public Transform LocalBala;
+    // Local onde ela saíra (vai ser deletado prov)
+    
+
+
+
+    private void Start()
+    {
+
+    }
+
+    void Update()
+    {
+        
+        angulo = Rotacao();
+        Pontadocano = LocalBala.position;
+        //Pontadocano = transform.Find("PontaTiro").position;
+
+        if (Input.GetMouseButtonDown(0))
+        {
+            CriarBala(Pontadocano);
+        }
+
+    }
+
+
+
+
+
+
+    private float Rotacao()
+    {
+        Vector2 direcao = alvo.position - transform.position;
+        float angle = Mathf.Atan2(direcao.y, direcao.x) * Mathf.Rad2Deg;
+        Quaternion rotation = Quaternion.AngleAxis(angle, Vector3.forward);
+        transform.rotation = Quaternion.Slerp(transform.rotation, rotation, velocidade * Time.deltaTime);
+        return angle;
+        // Calcula a rotação e rota o canhao, retorna o angulo da rotação
+    }
+
+
+
+    private void CriarBala(Vector3 PosicaoSurgir)
+    {
+        Instantiate(HolderBala, PosicaoSurgir, Quaternion.identity);,
+        //Gerando o prefab na localizaçaõ
+    }
+}
